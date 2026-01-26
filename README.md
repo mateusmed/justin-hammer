@@ -1,230 +1,232 @@
-# Justin Hammer - Simulador e Monitor de Métricas
+# Justin Hammer - Metrics Simulator and Monitor
+
+
+[readme-pt](00doc/readme-pt.md).
 
 ![justin-hammer](00doc/images/justin-hammer.png)
 
-Justin Hammer é uma aplicação Node.js projetada para simular um endpoint de métricas em tempo real, fazer a coleta periódica desses dados, armazená-los em um banco de dados de série temporal e fornecer uma API flexível para servir dados históricos e agregados para frontends de visualização.
+Justin Hammer is a Node.js application designed to simulate a real-time metrics endpoint, periodically collect this data, store it in a time-series database, and provide a flexible API to serve historical and aggregated data for visualization frontends.
 
-Ele serve como uma base de backend robusta para dashboards de monitoramento dinâmico.
+It serves as a robust backend foundation for dynamic monitoring dashboards.
 
-## Funcionalidades
+## Features
 
-- **Endpoint de Métricas Dinâmicas**: Um endpoint `/metrics` que serve métricas em JSON com valores aleatórios a cada chamada para simular uma aplicação real.
-- **Serviço de Coleta Configurável**: Um serviço que roda em background e coleta os dados do endpoint de métricas em um intervalo configurável.
-- **Coleta de Múltiplas Fontes**: Coleta métricas de diversas fontes HTTP configuráveis, identificando cada origem por um nome.
-- **Armazenamento de Série Temporal**: Armazena o histórico de métricas em um banco de dados local SQLite, otimizado para consultas de série temporal.
-- **Política de Retenção de Dados**: Gerencia o tamanho do banco de dados `metrics.db`, removendo automaticamente os dados mais antigos quando um limite de tamanho é atingido.
-- **Normalização de Dados**: Uma camada de normalização que transforma os formatos brutos das métricas em uma estrutura `(nome, labels, valor)` antes de salvar.
-- **API de Gráficos Dinâmica**: Um único e poderoso endpoint para obter dados para gráficos.
-- **API de Configuração Dinâmica**: Permite ler e atualizar a configuração da aplicação (`chart-parse-config.json`) via API.
-- **Filtro por Período de Tempo**: Filtra as métricas por um período de tempo dinâmico (ex: últimos 10 minutos, 2 horas, 7 dias).
-- **Agregação de Dados**: Agrega pontos de dados em intervalos de tempo (ex: valor médio por minuto) para garantir que os gráficos fiquem legíveis e performáticos, mesmo em longos períodos.
+- **Dynamic Metrics Endpoint**: A `/metrics` endpoint that serves metrics in JSON with randomized values on each call to simulate a real application.
+- **Configurable Collection Service**: A background service that collects data from the metrics endpoint at a configurable interval.
+- **Multi-source Collection**: Collects metrics from multiple configurable HTTP sources, identifying each origin by a name.
+- **Time-Series Storage**: Stores metric history in a local SQLite database, optimized for time-series queries.
+- **Data Retention Policy**: Manages the size of the `metrics.db` database, automatically removing older data when a size limit is reached.
+- **Data Normalization**: A normalization layer that transforms raw metric formats into a `(name, labels, value)` structure before saving.
+- **Dynamic Chart API**: A single and powerful endpoint to retrieve chart data.
+- **Dynamic Configuration API**: Allows reading and updating the application configuration (`chart-parse-config.json`) via API.
+- **Time Range Filter**: Filters metrics by a dynamic time period (e.g., last 10 minutes, 2 hours, 7 days).
+- **Data Aggregation**: Aggregates data points into time intervals (e.g., average value per minute) to ensure charts remain readable and performant even over long periods.
 
-## Tecnologias Utilizadas
+## Technologies Used
 
-- **Node.js**: Ambiente de execução.
-- **Express.js**: Servidor web para os endpoints da API.
-- **SQLite**: Banco de dados baseado em arquivo para o armazenamento de série temporal.
+- **Node.js**: Execution environment.
+- **Express.js**: Web server for API endpoints.
+- **SQLite**: File-based database for time-series storage.
 
-## Instalação e Execução
+## Installation and Execution
 
-1.  **Clone o repositório:**
+1.  **Clone the repository:**
     ```bash
-    git clone <url-do-seu-repositorio>
+    git clone <your-repository-url>
     cd justin-hammer
     ```
 
-2.  **Instale as dependências:**
+2.  **Install dependencies:**
     ```bash
     npm install
-    npm install node-fetch # Nova dependência
     ```
 
-3.  **Execute a aplicação:**
+3.  **Run the application:**
     ```bash
     npm start
     ```
-    O servidor será iniciado em `http://localhost:3001`. Na primeira vez que for executado, ele criará um diretório `database/` com o arquivo `metrics.db`.
+    The server will start at `http://localhost:3001`. On the first run, it will create a `database/` directory with the `metrics.db` file.
 
-    **Importante:** Se o esquema do banco de dados `metrics.db` for alterado (por exemplo, ao adicionar novas colunas), pode ser necessário deletar o arquivo `database/metrics.db` para que um novo banco de dados com o esquema atualizado seja criado na próxima execução.
+    **Important:** If the `metrics.db` database schema is changed (for example, by adding new columns), you may need to delete the `database/metrics.db` file so that a new database with the updated schema is created on the next run.
 
-## Endpoints da API
+## API Endpoints
 
-### Resumo dos Endpoints
+### Endpoint Summary
 
-| Método | Endpoint | Descrição |
+| Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/about` | Informações sobre a aplicação e versão. |
-| `GET` | `/metrics` | Endpoint de métricas simuladas (JSON). |
-| `GET` | `/api/config` | Consulta a configuração atual do sistema. |
-| `POST` | `/api/config` | Atualiza a configuração (Hot-Reload). |
-| `GET` | `/api/chart/:name` | Dados formatados para gráficos e dashboards. |
+| `GET` | `/about` | Information about the application and version. |
+| `GET` | `/metrics` | Simulated metrics endpoint (JSON). |
+| `GET` | `/api/config` | Queries the current system configuration. |
+| `POST` | `/api/config` | Updates the configuration (Hot-Reload). |
+| `GET` | `/api/chart/:name` | Formatted data for charts and dashboards. |
 
 ### `GET /about`
 
-Retorna informações sobre a aplicação, versão e autor.
+Returns information about the application, version, and author.
 
-**Exemplo:**
+**Example:**
 `http://localhost:3001/about`
 
 ---
 
 ### `GET /api/config`
 
-Retorna o conteúdo atual do arquivo de configuração `src/config/chart-parse-config.json`.
+Returns the current content of the `src/config/chart-parse-config.json` configuration file.
 
-**Exemplo:**
+**Example:**
 `http://localhost:3001/api/config`
 
 ---
 
 ### `POST /api/config`
 
-Atualiza o conteúdo do arquivo de configuração `src/config/chart-parse-config.json` com o JSON enviado no corpo da requisição.
+Updates the content of the `src/config/chart-parse-config.json` configuration file with the JSON sent in the request body.
 
-**Hot-Reload (Recarregamento Automático):**
+**Hot-Reload:**
 
-Graças ao sistema de gerenciamento de configuração, **todas as alterações** enviadas para este endpoint são aplicadas em tempo real, sem a necessidade de reiniciar o servidor. Isso inclui:
--   **Configurações de Coleta:** `intervalSeconds`, `dataSource`, etc.
--   **Configurações de Retenção:** `retentionSettings`.
--   **Definições de Gráficos:** Adicionar, remover ou modificar gráficos no array `charts`.
+Thanks to the configuration management system, **all changes** sent to this endpoint are applied in real-time without needing to restart the server. This includes:
+-   **Collection Settings:** `intervalSeconds`, `dataSource`, etc.
+-   **Retention Settings:** `retentionSettings`.
+-   **Chart Definitions:** Adding, removing, or modifying charts in the `charts` array.
 
-**Exemplo:**
-`POST http://localhost:3001/api/config` com o corpo JSON da nova configuração.
+**Example:**
+`POST http://localhost:3001/api/config` with the new configuration JSON body.
 
 ---
 
 ### `GET /metrics`
 
-Retorna um objeto JSON completo de métricas de aplicação simuladas. Os valores para medidores e contadores são randomizados a cada requisição para simular um sistema em tempo real.
+Returns a complete JSON object of simulated application metrics. Values for gauges and counters are randomized on each request to simulate a real-time system.
 
-**Exemplo:**
+**Example:**
 `http://localhost:3001/metrics`
 
 ---
 
 ### `GET /api/chart/:nameChart`
 
-Este é o endpoint principal para buscar dados de gráficos. Ele consulta os dados históricos do banco de dados e os formata para bibliotecas de visualização.
+This is the main endpoint for fetching chart data. It queries historical data from the database and formats it for visualization libraries.
 
-**Parâmetros de Rota:**
+**Route Parameters:**
 
--   `:nameChart` (string, obrigatório): O nome do gráfico a ser retornado, conforme definido em `src/config/parse-metrics.json`.
+-   `:nameChart` (string, required): The name of the chart to be returned, as defined in `src/config/chart-parse-config.json`.
 
-**Parâmetros de Query:**
+**Query Parameters:**
 
--   `range` (string, opcional, padrão: `1h`): O período de tempo para a consulta de dados. O formato é um número seguido por uma unidade.
-    -   Unidades: `m` (minutos), `h` (horas), `d` (dias).
-    -   Exemplo: `?range=30m`
+-   `range` (string, optional, default: `1h`): The time period for the data query. The format is a number followed by a unit.
+    -   Units: `m` (minutes), `h` (hours), `d` (days).
+    -   Example: `?range=30m`
 
--   `aggregate` (string, opcional): O tamanho do intervalo de tempo para a agregação de dados. Se omitido, os dados brutos são retornados. Quando fornecido, o valor médio para cada intervalo é calculado.
-    -   Unidades: `s` (segundos), `m` (minutos), `h` (horas).
-    -   Exemplo: `?aggregate=1m`
+-   `aggregate` (string, optional): The time interval size for data aggregation. If omitted, raw data is returned. When provided, the average value for each interval is calculated.
+    -   Units: `s` (seconds), `m` (minutes), `h` (hours).
+    -   Example: `?aggregate=1m`
 
--   `namePod` (string, opcional): Filtra os resultados para incluir apenas métricas de uma fonte de dados (pod) específica. O valor fornecido é usado para filtrar os registros pela coluna `namePod` no banco de dados. O nome do pod é definido na seção `dataSource` do arquivo de configuração.
+-   `namePod` (string, optional): Filters results to include only metrics from a specific data source (pod). The provided value is used to filter records by the `namePod` column in the database. The pod name is defined in the `dataSource` section of the configuration file.
 
-**Exemplos de Uso:**
+**Usage Examples:**
 
-1.  **Obter dados brutos dos últimos 15 minutos:**
+1.  **Get raw data from the last 15 minutes:**
     ```
     http://localhost:3001/api/chart/cpu_load_comparison?range=15m
     ```
 
-2.  **Obter dados das últimas 24 horas, agregados pela média de cada intervalo de 30 minutos:**
+2.  **Get data from the last 24 hours, aggregated by the average of each 30-minute interval:**
     ```
     http://localhost:3001/api/chart/cpu_load_comparison?range=1d&aggregate=30m
     ```
 
-### Como as Consultas de Gráficos Funcionam
+### How Chart Queries Work
 
-O endpoint `GET /api/chart/:nameChart` é versátil e se adapta ao tipo de dados que você deseja visualizar, principalmente através do parâmetro `temporal`.
+The `GET /api/chart/:nameChart` endpoint is versatile and adapts to the type of data you want to visualize, mainly through the `temporal` parameter.
 
--   **Gráficos Não Temporais (Padrão):**
-    -   Quando o parâmetro `temporal` **não é fornecido** na query (ou é `false`), a aplicação busca o **último valor registrado** para cada ponto de dado definido na configuração do gráfico (`chart-parse-config.json`).
-    -   A função `fetchMetricValue` é utilizada para essa finalidade.
-    -   Os `labels` do gráfico serão os definidos estaticamente na configuração (`chart.labels`).
-    -   **Exemplo:** Um gráfico de pizza que mostra o status atual de requisições (401, 404, 500).
+-   **Non-Temporal Charts (Default):**
+    -   When the `temporal` parameter is **not provided** in the query (or is `false`), the application fetches the **last recorded value** for each data point defined in the chart configuration (`chart-parse-config.json`).
+    -   The `fetchMetricValue` function is used for this purpose.
+    -   The chart `labels` will be those statically defined in the configuration (`chart.labels`).
+    -   **Example:** A pie chart showing the current status of requests (401, 404, 500).
 
--   **Gráficos Temporais (`temporal=true`):**
-    -   Quando o parâmetro `temporal` é definido como `true` na query, a aplicação busca **séries temporais** de dados, agregando-os em "baldes" de tempo.
-    -   A função `fetchTimeSeries` é utilizada.
-    -   Os `labels` do gráfico serão gerados dinamicamente com base nos timestamps dos baldes de tempo (ex: "14:30:00 PM", "14:40:00 PM").
-    -   Se a configuração do gráfico (`chart.datasets[].data`) define múltiplos `labelFilters` para uma única linha (como no `cpu_load_comparison`), os resultados de cada query são **consolidados por média** para cada balde de tempo, resultando em uma única série temporal para aquela linha.
-    -   **Exemplo:** Um gráfico de linha que mostra a carga da CPU ao longo do tempo, com pontos de dados a cada 10 minutos.
+-   **Temporal Charts (`temporal=true`):**
+    -   When the `temporal` parameter is set to `true` in the query, the application fetches **time series** data, aggregating them into time "buckets".
+    -   The `fetchTimeSeries` function is used.
+    -   The chart `labels` will be dynamically generated based on the timestamps of the time buckets (e.g., "14:30:00 PM", "14:40:00 PM").
+    -   If the chart configuration (`chart.datasets[].data`) defines multiple `labelFilters` for a single line (as in `cpu_load_comparison`), the results of each query are **consolidated by average** for each time bucket, resulting in a single time series for that line.
+    -   **Example:** A line chart showing CPU load over time, with data points every 10 minutes.
 
-**Parâmetros de Query Detalhados para `/api/chart/:nameChart`:**
+**Detailed Query Parameters for `/api/chart/:nameChart`:**
 
-Além dos parâmetros `range`, `aggregate` e `namePod` já mencionados, é crucial entender como o `temporal` afeta a consulta:
+In addition to the `range`, `aggregate`, and `namePod` parameters already mentioned, it is crucial to understand how `temporal` affects the query:
 
--   `temporal` (booleano, opcional): Se `true`, a consulta retornará séries temporais agregadas. Se omitido ou `false`, retornará o último valor para cada ponto de dado configurado.
+-   `temporal` (boolean, optional): If `true`, the query will return aggregated time series. If omitted or `false`, it will return the last value for each configured data point.
 
-**Exemplos de Uso Detalhados:**
+**Detailed Usage Examples:**
 
-1.  **Gráfico Não Temporal (Último Status):**
+1.  **Non-Temporal Chart (Last Status):**
     ```
     http://localhost:3001/api/chart/count_response_by_status
     ```
-    *Retorna o último valor de contagem para cada status (401, 404, 500).*
+    *Returns the last count value for each status (401, 404, 500).*
 
-2.  **Gráfico Temporal (Carga da CPU ao Longo do Tempo):**
+2.  **Temporal Chart (CPU Load Over Time):**
     ```
     http://localhost:3001/api/chart/cpu_load_comparison?range=1h&aggregate=10m&temporal=true
     ```
-    *Retorna a carga média da CPU a cada 10 minutos nas últimas 1 hora, com labels de tempo.*
+    *Returns the average CPU load every 10 minutes over the last 1 hour, with time labels.*
 
-3.  **Gráfico Não Temporal (Vendas por Categoria, Filtrado por Região e Ano):**
+3.  **Non-Temporal Chart (Sales by Category, Filtered by Region and Year):**
     ```
     http://localhost:3001/api/chart/name?region=North&year=2024
     ```
-    *Retorna as vendas totais e online por categoria para a região "North" no ano "2024".*
+    *Returns total and online sales by category for the "North" region in the year "2024".*
 
-4.  **Gráfico Temporal (Carga da CPU de um Pod Específico):**
+4.  **Temporal Chart (CPU Load of a Specific Pod):**
     ```
-    http://localhost:3001/api/chart/cpu_load_comparison?range=1h&aggregate=10m&temporal=true&namePod=meu-pod-app-1
+    http://localhost:3001/api/chart/cpu_load_comparison?range=1h&aggregate=10m&temporal=true&namePod=my-pod-app-1
     ```
-    *Retorna a carga média da CPU a cada 10 minutos nas últimas 1 hora, apenas para o pod "meu-pod-app-1".*
+    *Returns the average CPU load every 10 minutes over the last 1 hour, only for the pod "my-pod-app-1".*
 
-## Configuração
+## Configuration
 
-### Resumo de Parâmetros
+### Parameter Summary
 
-| Categoria | Propriedade | Tipo | Descrição |
+| Category | Property | Type | Description |
 | :--- | :--- | :--- | :--- |
-| **Coleta** | `intervalSeconds` | `number` | Frequência de coleta das métricas. |
-| **Fontes** | `dataSource.urls` | `array` | Lista de nomes e URLs dos pods/serviços. |
-| **Retenção** | `maxDbSizeMB` | `number` | Limite de tamanho do banco SQLite. |
-| **Limpeza** | `cleanupIntervalSeconds` | `number` | Frequência de verificação do tamanho do banco. |
+| **Collection** | `intervalSeconds` | `number` | Metric collection frequency. |
+| **Sources** | `dataSource.urls` | `array` | List of names and URLs of pods/services. |
+| **Retention** | `maxDbSizeMB` | `number` | Size limit for the SQLite database. |
+| **Cleanup** | `cleanupIntervalSeconds` | `number` | Frequency of database size check. |
 
-O principal arquivo de configuração é o `src/config/chart-parse-config.json`.
+The main configuration file is `src/config/chart-parse-config.json`.
 
--   `collectionSettings`: Define o intervalo de coleta, as fontes de dados e a política de retenção do banco de dados.
-    -   `intervalSeconds`: (número) O intervalo em segundos entre as coletas de métricas.
+-   `collectionSettings`: Defines the collection interval, data sources, and database retention policy.
+    -   `intervalSeconds`: (number) The interval in seconds between metric collections.
     -   `dataSource`:
-        -   `type`: (string) O tipo da fonte de dados (ex: "http", "file").
-        -   `urls`: (array de objetos) Lista de hosts para coleta. **Aqui é onde você conecta a métricas reais.**
-            -   `name`: (string) Nome identificador do Pod/Serviço.
-            -   `url`: (string) O endpoint que expõe as métricas.
-            -   **Dica:** Para usar dados reais, substitua o `localhost:3001/metrics` pelo IP/DNS da sua aplicação produtiva.
-            -   **Exemplo:**
+        -   `type`: (string) The type of data source (e.g., "http", "file").
+        -   `urls`: (array of objects) List of hosts for collection. **This is where you connect to real metrics.**
+            -   `name`: (string) Identifying name of the Pod/Service.
+            -   `url`: (string) The endpoint that exposes the metrics.
+            -   **Tip:** To use real data, replace `localhost:3001/metrics` with the IP/DNS of your production application.
+            -   **Example:**
                 ```json
                 "urls": [
-                  { "name": "meu-pod-app-1", "url": "http://192.168.1.10:8080/metrics" },
-                  { "name": "meu-pod-app-2", "url": "http://192.168.1.11:8080/metrics" }
+                  { "name": "my-pod-app-1", "url": "http://192.168.1.10:8080/metrics" },
+                  { "name": "my-pod-app-2", "url": "http://192.168.1.11:8080/metrics" }
                 ]
                 ```
-    -   `retentionSettings`: (objeto) Configura a política de retenção do banco de dados `metrics.db`.
-        -   `maxDbSizeMB`: (número) O tamanho máximo permitido para o arquivo `metrics.db` em Megabytes. Se o tamanho exceder este valor, a limpeza será acionada.
-        -   `cleanupIntervalSeconds`: (número) O intervalo em segundos para verificar o tamanho do banco de dados e executar a rotina de limpeza, se necessário.
-        -   **Lógica de Limpeza:** Quando o `metrics.db` atinge ou excede `maxDbSizeMB`, os dados mais antigos são removidos até que o tamanho do arquivo seja reduzido para 75% de `maxDbSizeMB`.
+    -   `retentionSettings`: (object) Configures the `metrics.db` retention policy.
+        -   `maxDbSizeMB`: (number) The maximum allowed size for the `metrics.db` file in Megabytes. If the size exceeds this value, cleanup will be triggered.
+        -   `cleanupIntervalSeconds`: (number) The interval in seconds to check the database size and run the cleanup routine if necessary.
+        -   **Cleanup Logic:** When `metrics.db` reaches or exceeds `maxDbSizeMB`, the oldest data is removed until the file size is reduced to 75% of `maxDbSizeMB`.
 
--   `charts`: Um array que define a estrutura e o mapeamento de métricas para cada gráfico disponível.
+-   `charts`: An array that defines the structure and mapping of metrics for each available chart.
 
-### Entendendo a Configuração de Gráficos
+### Understanding Chart Configuration
 
-A seção `charts` é o coração da API de visualização. Cada objeto no array define como os dados de um gráfico específico devem ser consultados e formatados.
+The `charts` section is the heart of the visualization API. Each object in the array defines how a specific chart's data should be queried and formatted.
 
-#### Como as Consultas Funcionam
+#### How Queries Work
 
-Vamos analisar um exemplo de um gráfico de pizza (`pie`) que conta o total de respostas por status HTTP:
+Let's analyze an example of a pie chart that counts the total responses by HTTP status:
 
 ```json
 {
@@ -245,19 +247,19 @@ Vamos analisar um exemplo de um gráfico de pizza (`pie`) que conta o total de r
 }
 ```
 
--   **`nameChart`**: É o identificador único usado na URL da API (ex: `/api/chart/count_response_by_status`).
--   **`chart.labels`**: Corresponde aos rótulos do gráfico. A ordem aqui é importante.
--   **`datasets`**: Define um conjunto de dados para o gráfico.
--   **`metric`**: Especifica o nome da métrica a ser buscada no banco de dados (a coluna `name` na tabela `metrics`). Neste caso, `proxy_responses_total`.
--   **`data`**: É um array onde cada objeto define uma consulta para popular o gráfico. A ordem dos objetos corresponde à ordem dos `labels`.
-    -   **Primeiro item (`data[0]`):** A aplicação buscará o valor da métrica `proxy_responses_total` onde a coluna de labels (um JSON) contém `"status": "401"`. O resultado será o primeiro valor no gráfico, correspondente ao `label` "401".
-    -   **Segundo item (`data[1]`):** Fará o mesmo, mas filtrando por `"status": "404"`, e assim por diante.
+-   **`nameChart`**: The unique identifier used in the API URL (e.g., `/api/chart/count_response_by_status`).
+-   **`chart.labels`**: Corresponds to the chart labels. The order here is important.
+-   **`datasets`**: Defines a set of data for the chart.
+-   **`metric`**: Specifies the name of the metric to be searched in the database (the `name` column in the `metrics` table). In this case, `proxy_responses_total`.
+-   **`data`**: An array where each object defines a query to populate the chart. The order of the objects corresponds to the order of the `labels`.
+    -   **First item (`data[0]`):** The application will search for the value of the `proxy_responses_total` metric where the labels column (a JSON) contains `"status": "401"`. The result will be the first value in the chart, corresponding to the "401" label.
+    -   **Second item (`data[1]`):** It will do the same, but filtering by `"status": "404"`, and so on.
 
-Essencialmente, para cada item no array `data`, uma consulta separada é executada para encontrar o valor correspondente.
+Essentially, for each item in the `data` array, a separate query is executed to find the corresponding value.
 
-#### Filtros Dinâmicos
+#### Dynamic Filters
 
-A configuração de um gráfico também pode incluir um array de `filters`, permitindo que a API filtre os dados dinamicamente através de query parameters na URL.
+A chart configuration can also include a `filters` array, allowing the API to filter data dynamically through query parameters in the URL.
 
 ```json
 "filters": [
@@ -271,65 +273,43 @@ A configuração de um gráfico também pode incluir um array de `filters`, perm
 ]
 ```
 
-## Observações Importantes e Dicas
+## Important Notes and Tips
 
+### 1. Temporal vs. Instantaneous
 
+*   **`temporal=false` (Default):** Returns the **last known state** of the metric. Ideal for status gauges (e.g., "Is the system UP or DOWN?").
 
-### 1. Temporal vs. Instantâneo
+*   **`temporal=true`:** Returns a **historical series**. Useful for observing trends and behaviors over time.
 
-*   **`temporal=false` (Padrão):** Retorna o **último estado conhecido** da métrica. É ideal para medidores de status (ex: "Sistema está UP ou DOWN?").
+### 2. From Simulation to Real (Production)
 
-*   **`temporal=true`:** Retorna uma **série histórica**. Útil para observar tendências e comportamentos ao longo do tempo.
+Justin Hammer comes pre-configured to read from its own `/metrics` (mock) endpoint. To connect to a host that returns **real metrics**:
 
+1. Open `src/config/chart-parse-config.json`.
 
+2. In the `dataSource.urls` array, change the `url` to the actual address of your pod or service.
 
-### 2. De Simulação para Real (Produção)
+3. The system will start collecting, normalizing, and storing real data automatically, without needing code changes.
 
+### 3. Aggregation and Counters (RPS)
 
+When using `temporal=true` with `aggregate`, the API calculates the **average** of the values in the interval. For *Counter* type metrics (which only increase), this average over a time interval effectively represents the **request rate** (or events) for that period.
 
-O Justin Hammer vem pré-configurado para ler do próprio endpoint `/metrics` (mock). Para conectar em um host que retorna **métricas reais**:
+### 4. Retention Transparency
 
+The data cleanup service (`metrics-retention.service.js`) runs silently in the background but emits detailed logs to the console whenever a cleanup is triggered or when the database is compacted via `VACUUM`. This allows monitoring storage health without manual intervention.
 
+### 5. Combined Queries
 
-1. Acesse `src/config/chart-parse-config.json`.
-
-
-
-2. No array `dataSource.urls`, altere o `url` para o endereço real do seu pod ou serviço.
-
-
-
-3. O sistema passará a coletar, normalizar e armazenar os dados reais automaticamente, sem necessidade de alterar o código.
-
-
-
-
-
-
-
-### 3. Agregação e Contadores (RPS)
-
-Ao usar `temporal=true` com `aggregate`, a API calcula a **média** dos valores no intervalo. Para métricas do tipo *Counter* (que apenas crescem), essa média em um intervalo de tempo representa efetivamente a **taxa de requisições** (ou eventos) por aquele período.
-
-
-
-### 4. Transparência na Retenção
-
-O serviço de limpeza de dados (`metrics-retention.service.js`) é executado silenciosamente em background, mas emite logs detalhados no console sempre que uma limpeza é disparada ou quando o banco é compactado via `VACUUM`. Isso permite monitorar a saúde do armazenamento sem intervenção manual.
-
-
-
-### 5. Queries Combinadas
-
-Você pode combinar todos os filtros para obter visões granulares:
+You can combine all filters to get granular views:
 
 `GET /api/chart/cpu_usage?range=24h&aggregate=10m&temporal=true&namePod=app-server-01&method=POST`
 
-*Aqui você veria a carga de CPU das últimas 24h, agrupada a cada 10 min, apenas para o pod especificado e filtrando requisições POST.*
+*Here you would see the CPU load for the last 24 hours, grouped every 10 min, only for the specified pod and filtering for POST requests.*
 
 ---
 
-## Documentação Adicional
+## Additional Documentation
 
-Para um aprofundamento técnico sobre como os dados são processados, consulte:
-- [**Entendendo as Métricas no Justin Hammer**](00doc/ENTENDENDO_METRICAS.md): Detalhes sobre tipos de métricas (Gauge, Counter), cálculos de RPS e lógica de agregação.
+For a technical deep dive into how data is processed, see:
+- [**Understanding Metrics in Justin Hammer**](00doc/understanding-metrics.md): Details on metric types (Gauge, Counter), RPS calculations, and aggregation logic.
