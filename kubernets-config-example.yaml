@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: justin-hammer-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: justin-hammer
+  template:
+    metadata:
+      labels:
+        app: justin-hammer
+    spec:
+      # INÍCIO DA SEÇÃO DE SEGURANÇA
+      securityContext:
+        runAsUser: 1000          # Garante que o processo rode como usuário 1000
+        runAsGroup: 3000         # Garante que o processo rode como grupo 3000
+        fsGroup: 2000            # IMPORTANTE: O Kubernetes fará com que o volume /data pertença a este grupo
+        runAsNonRoot: true       # Garante que o contêiner não pode iniciar como root
+      # FIM DA SEÇÃO DE SEGURANÇA
+      containers:
+      - name: justin-hammer
+        image: sua-imagem:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DB_PATH
+          value: "/data/metrics.db"
+        volumeMounts:
+        - name: justin-hammer-cache
+          mountPath: "/data"
+      volumes:
+      - name: justin-hammer-cache
+        emptyDir: {}
