@@ -1,59 +1,56 @@
 const express = require('express');
-const server = express();
-const port = 3001;
+const config = require('./config');
+const { openStore } = require('./metrics/store');
+const { startCollector } = require('./metrics/collector');
+const { startRetention } = require('./metrics/retention');
+const { runQuery, QueryError } = require('./metrics/query');
+const { mockMetrics } = require('./metrics/mock');
 
-// Controllers
-const justinHammerController = require('./controllers/justin-hammer-controller');
-const healthCheckController = require('./controllers/healthCheck-controller');
-const mockMetricGeneratorController = require('./controllers/mock-metric-generator-controller');
-const configController = require('./controllers/config-controller');
-const aboutController = require('./controllers/about-controller');
+function main() {
+    const store = openStore(config.dataPath);
+    const targets = config.mock ? [...config.targets, { name: 'mock', url: `http://127.0.0.1:${config.port}/mock/metrics` }] : config.targets;
 
-// Services
-const { metricsCollectorService } = require('./services/metrics/metrics-collector.service.js');
-const dynamicMetricsGeneratorService = require('./services/metrics/metrics-dynamic-generator.service.js');
-const { metricsRetentionService } = require('./services/metrics/metrics-retention.service.js');
-const { configManagerService } = require('./services/config-manager.service.js');
+    const collector = startCollector(store, targets, config.scrapeIntervalSeconds);
+    startRetention(store, config);
 
-// Middleware for CORS
-server.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    next();
-});
+    createApp(store, collector.status).listen(config.port, () => {
+        console.log(`[justin-hammer] na porta ${config.port}, ${targets.length} alvo(s)`);
+    });
+}
 
-// Middleware to parse JSON request bodies
-server.use(express.json());
+function createApp(store, targetsStatus = () => ({})) {
+    const app = express();
 
+    app.get('/health', (req, res) => res.json({ status: 'OK' }));
+    app.get('/about', (req, res) => res.json({ appName: 'justin-hammer', version: '2.0.0', role: 'coleta, guarda e consulta métricas' }));
 
+    // Situação de cada alvo (última coleta, erro)
+    app.get('/api/targets', (req, res) => res.json(targetsStatus()));
 
-// Registrando todos os controllers
-server.use('/api', justinHammerController); // Rotas: /api/chart/*
-server.use('/metrics', mockMetricGeneratorController); // Rota: /metrics
-server.use('/health', healthCheckController); // Rotas: /health/ e /health/status
-server.use('/api/config', configController);
-server.use('/about', aboutController);
+    // Catálogo: o que existe para consultar (nome, tipo e valores de cada label)
+    app.get('/api/metrics', (req, res) => res.json(store.catalog()));
 
-const startServer = async () => {
-    try {
-        // Load the metrics template before anything else
-        await dynamicMetricsGeneratorService.loadTemplate();
+    // Uma série por grupo numa grade de tempo; where.<label>=valor (ou ~regex) filtra
+    app.get('/api/series', (req, res) => {
+        try {
+            res.json(runQuery(store, { ...req.query, where: whereFrom(req.query) }));
+        } catch (error) {
+            if (!(error instanceof QueryError)) throw error;
+            res.status(400).json({ message: error.message });
+        }
+    });
 
-        // Wait for the collector and database to be ready
-        await metricsCollectorService.start();
-        await metricsRetentionService.start();
-        await configManagerService.startWatching();
+    if (config.mock) app.get('/mock/metrics', (req, res) => res.type('text/plain').send(mockMetrics()));
+    return app;
+}
 
-        // Now, start the web server
-        server.listen(port, () => {
-            console.log(`Example app listening at http://localhost:${port}`);
-        });
+// ?where.service=web@docker&where.code=~5.. → { service: 'web@docker', code: '~5..' }
+function whereFrom(query) {
+    return Object.fromEntries(Object.entries(query)
+        .filter(([key]) => key.startsWith('where.'))
+        .map(([key, value]) => [key.slice('where.'.length), String(value)]));
+}
 
-    } catch (error) {
-        console.error('Failed to start the application:', error);
-        process.exit(1);
-    }
-};
+module.exports = { createApp };
 
-startServer();
+if (require.main === module) main();
