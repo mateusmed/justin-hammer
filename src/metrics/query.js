@@ -91,14 +91,21 @@ function counterValues(members, grid, query) {
     return totals.map(value => (value === null ? null : round(query.fn === 'rate' ? value / seconds : value)));
 }
 
+// Aumento dentro de cada ponto, somando os passos entre amostras (contador que caiu = reinício, conta do zero).
+// A base é o último valor do ponto anterior; sem ele (coleta começou no meio), a primeira amostra do ponto,
+// como o increase() do Prometheus, que usa só as amostras de dentro da janela.
 function increases(points, grid, stepMs) {
-    const lasts = grid.map(end => lastIn(points, end - stepMs, end));
-    const before = lastIn(points, grid[0] - 2 * stepMs, grid[0] - stepMs);
+    return grid.map((end) => {
+        const inside = points.filter(([ts]) => ts > end - stepMs && ts <= end);
+        if (inside.length === 0) return null;
 
-    return lasts.map((value, i) => {
-        const previous = i === 0 ? before : lasts[i - 1];
-        if (value === null || previous === null) return null;
-        return value >= previous ? value - previous : value;
+        let base = lastIn(points, end - 2 * stepMs, end - stepMs) ?? inside[0][1];
+        let total = 0;
+        for (const [, value] of inside) {
+            total += value >= base ? value - base : value;
+            base = value;
+        }
+        return total;
     });
 }
 

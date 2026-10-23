@@ -89,6 +89,14 @@ test('contador reiniciado (app reiniciou) não vira aumento negativo', () => {
     assert.ok(values.every(value => value === null || value >= 0), JSON.stringify(values));
 });
 
+test('aumento de um ponto só com a coleta começando no meio da janela (pizza da última hora)', () => {
+    const store = tempStore();
+    fill(store, [{ service: 'web' }], ts => ts / 1000);
+
+    const { values } = runQuery(store, { metric: 'requests_total', fn: 'increase', range: '1h', step: '1h' }, NOW).series[0];
+    assert.deepEqual(values, [600]);
+});
+
 test('sem dados no ponto: null (o gráfico mostra um buraco, e não zero)', () => {
     const store = tempStore();
     fill(store, [{}], ts => ts / 1000);
